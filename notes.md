@@ -18,3 +18,5 @@
 * I feel like when they say socket is also a file referenced via a file descriptor, I feel
   like the bytes do end up but this time on another computer. or maybe temporarily in a file
   on the local, from where the OS fetches it and sends it.
+
+* Nah man, so we have these sys calls called read, write, etc which identify or remember things by ints called file descriptors. SO hidden behind an int fd can be an actual file made up of disk blocks or internal kernal memory state like socket, in the socket's case you can have info like host address, port and othe stuff. 
