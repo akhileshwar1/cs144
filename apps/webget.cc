@@ -13,7 +13,7 @@ void get_URL( const string& host, const string& path )
   Address address = Address(host, "http");
   TCPSocket tcp = TCPSocket();
   tcp.connect(address);
-  tcp.write("GET " + path + " " + "HTTP/1.1\r\nHost: " + "\r\nConnection: close\r\n\r\n");
+  tcp.write( "GET " + path + " " + "HTTP/1.1\r\nHost: " + host + "\r\nConnection: close\r\n\r\n" );
   std::string str;
   while ( !tcp.eof()) {
     tcp.read(str); 
