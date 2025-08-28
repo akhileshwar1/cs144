@@ -1,4 +1,5 @@
 #include "byte_stream.hh"
+#include <iostream>
 
 using namespace std;
 
@@ -12,14 +13,17 @@ bool Writer::is_closed() const
 
 void Writer::push( string data )
 {
-  if ((head  - tail + 1) == 5) {
-    return;
+  for (char c : data) {
+    if ((head  - tail + 1) == (int) capacity_) {
+      std::cout << "Buffer full!" << std::endl;
+      return;
+    }
+    stream[head] = (byte) c;
+    head = (head + 1) % capacity_;
+    total_bytes_pushed++;
   }
-  stream[head] = data;
-  head = (head + 1) % capacity;
-  return;
 }
-    static constexpr std::size_t capacity_ = 1024; // example fixed size
+
 void Writer::close()
 {
   // Your code here.
@@ -27,13 +31,12 @@ void Writer::close()
 
 uint64_t Writer::available_capacity() const
 {
-  return capacity - head;
+  return capacity_ - (head - tail);
 }
 
 uint64_t Writer::bytes_pushed() const
 {
-  // Your code here.
-  return head + 1;
+  return total_bytes_pushed;
 }
 
 bool Reader::is_finished() const
@@ -43,27 +46,34 @@ bool Reader::is_finished() const
 
 uint64_t Reader::bytes_popped() const
 {
-  // Your code here.
-  return tail + 1;
+  return total_bytes_popped;
 }
 
-string_view Reader::peek() const
-{
-  // Your code here.
-  return stream[tail];
+std::string_view Reader::peek() const {
+  // Calculate contiguous bytes available starting at tail
+  size_t readable = 0;
+  if (head >= tail) {
+    readable = head - tail + 1;
+  }
+
+  // Reinterpret std::byte* as const char*
+  const char* start_ptr = reinterpret_cast<const char*>(&stream[tail]);
+
+  return std::string_view(start_ptr, readable);
 }
 
 void Reader::pop( uint64_t len )
 {
-  if (head == tail) {
-    return;
+  for (int i = tail; i <=(int) len; i++) {
+    if (head == tail) {
+      return;
+    }
+    tail = (tail + 1) % capacity_;
+    total_bytes_popped++;
   }
-  byte item = stream[tail];
-  tail = (tail + 1) % capacity;
 }
 
 uint64_t Reader::bytes_buffered() const
 {
-  // Your code here.
   return head - tail;
 }
