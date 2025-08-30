@@ -1,79 +1,72 @@
 #include "byte_stream.hh"
-#include <iostream>
 
 using namespace std;
 
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), stream( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ) {}
 
 bool Writer::is_closed() const
 {
-  // Your code here.
-  return {};
+  return closed_;
 }
 
 void Writer::push( string data )
 {
-  for (char c : data) {
-    if ((head  - tail + 1) == (int) capacity_) {
-      std::cout << "Buffer full!" << std::endl;
-      return;
-    }
-    stream[head] = (byte) c;
-    head = (head + 1) % capacity_;
-    total_bytes_pushed++;
+  if ( closed_ || error_ ) {
+    set_error();
+    return;
   }
+
+  if ( data.length() > available_capacity() ) { 
+    data = data.substr( 0, available_capacity() );   }
+  std::copy( data.begin(), data.end(), std::back_inserter( buffer_ ) );
+  bytes_written_ += data.size();
 }
 
 void Writer::close()
 {
-  // Your code here.
+  closed_ = true;
 }
 
 uint64_t Writer::available_capacity() const
 {
-  return capacity_ - (head - tail);
+  uint64_t ava_capacity = capacity_ - buffer_.size();
+  return ava_capacity;
 }
 
 uint64_t Writer::bytes_pushed() const
 {
-  return total_bytes_pushed;
+  return bytes_written_;
 }
 
 bool Reader::is_finished() const
 {
-  return (head == tail);
+  bool res = closed_ && buffer_.empty();
+  return res;
 }
 
 uint64_t Reader::bytes_popped() const
 {
-  return total_bytes_popped;
+  return bytes_read_;
 }
 
-std::string_view Reader::peek() const {
-  // Calculate contiguous bytes available starting at tail
-  size_t readable = 0;
-  if (head >= tail) {
-    readable = head - tail + 1;
+string_view Reader::peek() const
+{
+  if ( !buffer_.empty() ) {
+    return std::string_view( &buffer_.front(), 1 );
   }
-
-  // Reinterpret std::byte* as const char*
-  const char* start_ptr = reinterpret_cast<const char*>(&stream[tail]);
-
-  return std::string_view(start_ptr, readable);
+  return std::string_view();
 }
 
 void Reader::pop( uint64_t len )
 {
-  for (int i = tail; i <=(int) len; i++) {
-    if (head == tail) {
-      return;
-    }
-    tail = (tail + 1) % capacity_;
-    total_bytes_popped++;
+  if ( len > buffer_.size() ) {
+    len = buffer_.size();
   }
+  buffer_.erase( buffer_.begin(), buffer_.begin() + len );
+  bytes_read_ += len;
 }
 
 uint64_t Reader::bytes_buffered() const
 {
-  return head - tail;
+  return buffer_.size();
 }
